@@ -6,6 +6,8 @@ from Phidget22.Phidget import *
 from Phidget22.Net import *
 
 prevValue = 0.0
+prevTime=time.clock()
+f=open("data.txt","a+")
 
 try:
     ch = BLDCMotor()
@@ -49,16 +51,23 @@ def BLDCMotorDetached(e):
 def ErrorEvent(e, eCode, description):
     print("Error %i : %s" % (eCode, description))
     
-def PositionChangeHandler(e, position):
-    
-    print("Time: %f" % ch.getAcceleration())
-
 def VelocityUpdateHandler(e, velocity):
     global prevValue
+    global prevTime
+    
     currentValue=ch.getPosition()
-    print("Acceleration: %f" % ch.getAcceleration())
-    print("Velocity: %f" % ch.getVelocity())
-    print("Position: %f" % ch.getPosition())
+    currentTime=time.clock()
+    
+##    print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
+##    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+    print(ch.getPosition())
+    prevValue=currentValue
+    prevTime=currentTime
+    
+def closeOut():
+    ch.setTargetVelocity(0)
+    ch.close()
+    print("Stopped")
 
 try:
     ch.setOnAttachHandler(BLDCMotorAttached)
@@ -67,38 +76,6 @@ try:
 
     ch.setOnVelocityUpdateHandler(VelocityUpdateHandler)
 
-    # Please review the Phidget22 channel matching documentation for details on the device
-    # and class architecture of Phidget22, and how channels are matched to device features.
-
-    # Specifies the serial number of the device to attach to.
-    # For VINT devices, this is the hub serial number.
-    #
-    # The default is any device.
-    #
-    # ch.setDeviceSerialNumber(<YOUR DEVICE SERIAL NUMBER>) 
-
-    # For VINT devices, this specifies the port the VINT device must be plugged into.
-    #
-    # The default is any port.
-    #
-    # ch.setHubPort(0)
-
-    # Specifies which channel to attach to.  It is important that the channel of
-    # the device is the same class as the channel that is being opened.
-    #
-    # The default is any channel.
-    #
-    # ch.setChannel(0)
-
-    # In order to attach to a network Phidget, the program must connect to a Phidget22 Network Server.
-    # In a normal environment this can be done automatically by enabling server discovery, which
-    # will cause the client to discovery and connect to available servers.
-    #
-    # To force the channel to only match a network Phidget, set remote to 1.
-    #
-    # Net.enableServerDiscovery(PhidgetServerType.PHIDGETSERVER_DEVICEREMOTE);
-    # ch.setIsRemote(1)
-
     print("Waiting for the Phidget BLDCMotor Object to be attached...")
     ch.openWaitForAttachment(5000)
 except PhidgetException as e:
@@ -106,13 +83,17 @@ except PhidgetException as e:
     print("Press Enter to Exit...\n")
     readin = sys.stdin.read(1)
     exit(1)
-
-print("Setting Target Velocity to 1 for 5 seconds...\n")
+    
+ch.setDataInterval(100) #Requires an int and is in millisec
 ch.setRescaleFactor(360/12);
-ch.setTargetVelocity(0.0)
-time.sleep(10000)
 
+##ch.setTargetVelocity(3.5/4000*60)
 
+while(1):
+    ch.setTargetVelocity(0)
+##time.sleep(10)
+
+f.close()
 
 try:
     ch.close()
@@ -122,5 +103,5 @@ except PhidgetException as e:
     readin = sys.stdin.read(1)
     exit(1) 
 print("Closed BLDCMotor device")
-exit(0)
-                     
+exit(0)                     
+
