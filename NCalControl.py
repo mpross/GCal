@@ -12,7 +12,7 @@ vel=0;
 measVel=0;
 
 # Data file to be appended to
-f=open("data.txt","a+")
+f=open("ScalingTest.txt","a+")
 
 # Motor connection
 try:
@@ -94,18 +94,19 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-setVel=3 #Hz
+setVel=5 #Hz
 maxVel=0.1 #Duty Cycle
 try:
     while(1):    
         
-        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
-
+##        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
+        vel=setVel/4000*60
         # Velocity limit
         if(vel <=maxVel):
             ch.setTargetVelocity(vel)
         else:
             ch.setTargetVelocity(maxVel)
+            
 except KeyboardInterrupt:
     # Close out
     ch.setTargetVelocity(0)
