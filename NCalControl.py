@@ -5,10 +5,16 @@ from Phidget22.PhidgetException import *
 from Phidget22.Phidget import *
 from Phidget22.Net import *
 
+# Variable initialization
 prevValue = 0.0
 prevTime=time.clock()
+vel=0;
+measVel=0;
+
+# Data file to be appended to
 f=open("data.txt","a+")
 
+# Motor connection
 try:
     ch = BLDCMotor()
 except RuntimeError as e:
@@ -50,30 +56,29 @@ def BLDCMotorDetached(e):
 
 def ErrorEvent(e, eCode, description):
     print("Error %i : %s" % (eCode, description))
-    
+
+# This event is called at a regular cadence set by DataInterval timed by the controllers clock.    
 def VelocityUpdateHandler(e, velocity):
     global prevValue
     global prevTime
-    
+    global measVel
+
     currentValue=ch.getPosition()
     currentTime=time.clock()
     
-##    print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
-##    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
-    print(ch.getPosition())
+    # Outputs and saves set velocity and measured velocity
+    print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
+    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+    measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
+    
     prevValue=currentValue
     prevTime=currentTime
-    
-def closeOut():
-    ch.setTargetVelocity(0)
-    ch.close()
-    print("Stopped")
 
+# Initial setup
 try:
     ch.setOnAttachHandler(BLDCMotorAttached)
     ch.setOnDetachHandler(BLDCMotorDetached)
     ch.setOnErrorHandler(ErrorEvent)
-
     ch.setOnVelocityUpdateHandler(VelocityUpdateHandler)
 
     print("Waiting for the Phidget BLDCMotor Object to be attached...")
@@ -84,18 +89,27 @@ except PhidgetException as e:
     readin = sys.stdin.read(1)
     exit(1)
     
-ch.setDataInterval(100) #Requires an int and is in millisec
-ch.setRescaleFactor(360/12);
+ch.setDataInterval(100) # Sets controller output rate. Requires an int and is in millisec
+ch.setRescaleFactor(360/12); # Sets scaling of Position readout
+ch.setAcceleration(0.1)
 
-##ch.setTargetVelocity(3.5/4000*60)
+# Main loop
+setVel=0.05 #Hz
+maxVel=0.1 #Hz
+while(1):    
+    
+    vel=abs(0.1*(setVel-measVel/4000*60)+setVel)
+    
+    if(vel <=maxVel):
+        ch.setTargetVelocity(vel)
+    else:
+        ch.setTargetVelocity(maxVel)
 
-while(1):
-    ch.setTargetVelocity(0)
-##time.sleep(10)
-
-f.close()
+# Close out
+ch.setTargetVelocity(0)
 
 try:
+    f.close()
     ch.close()
 except PhidgetException as e:
     print("Phidget Exception %i: %s" % (e.code, e.details))
