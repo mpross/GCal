@@ -94,8 +94,8 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-setVel=5 #Hz
-maxVel=0.1 #Duty Cycle
+setVel=10 #Hz
+maxVel=0.3 #Duty Cycle
 try:
     while(1):    
         
