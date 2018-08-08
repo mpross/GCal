@@ -68,7 +68,7 @@ def VelocityUpdateHandler(e, velocity):
     
     # Outputs and saves set velocity and measured velocity
     print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
-    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+##    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
     measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
     
     prevValue=currentValue
@@ -91,15 +91,16 @@ except PhidgetException as e:
     
 ch.setDataInterval(100) # Sets controller output rate. Requires an int and is in millisec
 ch.setRescaleFactor(360/12); # Sets scaling of Position readout
-ch.setAcceleration(0.1)
+ch.setAcceleration(0.2)
 
-# Main loop
-setVel=0.05 #Hz
-maxVel=0.1 #Hz
+# Feedback loop
+setVel=0 #Hz
+maxVel=0.1 #Duty Cycle
 while(1):    
     
-    vel=abs(0.1*(setVel-measVel/4000*60)+setVel)
-    
+    vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
+
+    # Velocity limit
     if(vel <=maxVel):
         ch.setTargetVelocity(vel)
     else:
