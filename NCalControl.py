@@ -68,7 +68,7 @@ def VelocityUpdateHandler(e, velocity):
     
     # Outputs and saves set velocity and measured velocity
     print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
-##    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
     measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
     
     prevValue=currentValue
@@ -94,29 +94,32 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-setVel=0 #Hz
+setVel=3 #Hz
 maxVel=0.1 #Duty Cycle
-while(1):    
-    
-    vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
-
-    # Velocity limit
-    if(vel <=maxVel):
-        ch.setTargetVelocity(vel)
-    else:
-        ch.setTargetVelocity(maxVel)
-
-# Close out
-ch.setTargetVelocity(0)
-
 try:
-    f.close()
-    ch.close()
-except PhidgetException as e:
-    print("Phidget Exception %i: %s" % (e.code, e.details))
-    print("Press Enter to Exit...\n")
-    readin = sys.stdin.read(1)
-    exit(1) 
-print("Closed BLDCMotor device")
-exit(0)                     
+    while(1):    
+        
+        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
+
+        # Velocity limit
+        if(vel <=maxVel):
+            ch.setTargetVelocity(vel)
+        else:
+            ch.setTargetVelocity(maxVel)
+except KeyboardInterrupt:
+    # Close out
+    ch.setTargetVelocity(0)
+
+    try:
+        f.close()
+        ch.close()
+    except PhidgetException as e:
+        print("Phidget Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit...\n")
+        readin = sys.stdin.read(1)
+        exit(1) 
+    print("Closed BLDCMotor device")
+    exit(0)     
+
+                  
 
