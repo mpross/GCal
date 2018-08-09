@@ -20,6 +20,9 @@ maxVel=0.1 #Duty Cycle
 maxAcc=0.2 #Duty Cycle/s
 dataRate=100 #Must be int and is in milliseconds
 scale=360/12 #360 degrees/12 poles
+avVel=0.0
+N=1
+sumVel=0.0
 
 # Motor connection
 try:
@@ -101,10 +104,7 @@ def ErrorEvent(e, eCode, description):
 
 # This event is called at a regular cadence set by DataInterval timed by the controllers clock.    
 def VelocityUpdateHandler(e, velocity):
-    global prevValue
-    global prevTime
-    global measVel
-    global fileSave
+    global prevValue, prevTime, measVel, fileSave, avVel, N, sumVel
 
     currentValue=ch.getPosition()
     currentTime=time.perf_counter()
@@ -113,10 +113,19 @@ def VelocityUpdateHandler(e, velocity):
     print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
 
     if ("y" in fileSave) or ("Y" in fileSave):
-        f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+        f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime))+"\r\n")
 
     measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
     
+    if N<10:
+        sumVel+=measVel
+        N+=1
+    else:
+        sumVel+=measVel
+        avVel=sumVel/10.0
+        N=1
+        sumVel=0.0
+        
     prevValue=currentValue
     prevTime=currentTime
 
@@ -141,9 +150,12 @@ ch.setAcceleration(maxAcc)
 
 # Feedback loop
 try:
-    while(1):   
-##        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
-        vel=setVel/4000*60
+    while(1):
+        ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
+        ch.setRescaleFactor(scale); # Sets scaling of Position readout
+        ch.setAcceleration(maxAcc)
+        vel=abs(0.5*(setVel-avVel)+setVel)/4000*60 
+##        vel=setVel/4000*60
         # Velocity limit
         try:
             if(vel <=maxVel):            
@@ -152,9 +164,8 @@ try:
                 ch.setTargetVelocity(maxVel)
         except PhidgetException as e:
             print("Exception %i: %s" % (e.code, e.details))
-            ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
-            ch.setRescaleFactor(scale); # Sets scaling of Position readout
-            ch.setAcceleration(maxAcc)
+
+        time.sleep(1)
             
 except KeyboardInterrupt:
     # Close out
