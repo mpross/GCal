@@ -14,15 +14,51 @@ prevValue = 0.0
 prevTime=time.perf_counter()
 vel=0;
 measVel=0;
-
-# Data file to be appended to
-f=open("data/NoiseRun_5Hz.txt","a+")
+fileName="NoiseRun_5Hz.txt"
+setVel=3 #Hz
 
 # Motor connection
 try:
+    print("LIGO GCal Control")
+    fileName=input("Enter data file name: ")
+    # Data file to be appended to
+    if ".txt" in fileName:
+        if not os.path.exists("data/"+fileName):
+            f=open("data/"+fileName,"a+")
+        else:
+            option=input("File already exists\nOverwrite, Append, or NewFile: ")
+            if "a" in option:
+                f=open("data/"+fileName,"a+")
+            elif "o" in option:
+                f=open("data/"+fileName,"w+")
+            else:
+                i=1
+                newFileName=fileName.replace(".txt","")+"("+str(i)+")"+".txt"
+                while(os.path.exists("data/"+newFileName)):
+                    newFileName=fileName.replace(".txt","")+"("+str(i)+")"+".txt"
+                    i+=1
+                f=open("data/"+newFileName,"a+")
+    else:
+        if not os.path.exists("data/"+fileName+".txt"):
+            f=open("data/"+fileName+".txt","a+")
+        else:
+            option=input("File already exists\nOverwrite, Append, or NewFile: ")
+            if "a" in option:
+                f=open("data/"+fileName+".txt","a+")
+            elif "o" in option:
+                f=open("data/"+fileName+".txt","w+")
+            else:
+                i=1
+                newFileName=fileName+"("+str(i)+")"+".txt"
+                while(os.path.exists("data/"+newFileName)):
+                    newFileName=fileName+"("+str(i)+")"+".txt"
+                    i+=1
+                f=open("data/"+newFileName,"a+")
+    setVel=float(input("Set rotor frequency in Hz: "))
+    
     ch = BLDCMotor()
 except RuntimeError as e:
-    print("Runtime Exception %s" % e.details)
+    print("Exception %s" % e.details)
     print("Press Enter to Exit...\n")
     readin = sys.stdin.read(1)
     exit(1)
@@ -33,7 +69,7 @@ def BLDCMotorAttached(e):
         print("\nMotor Attached")
         print("\n")
     except PhidgetException as e:
-        print("Phidget Exception %i: %s" % (e.code, e.details))
+        print("Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit...\n")
         readin = sys.stdin.read(1)
         exit(1)   
@@ -43,7 +79,7 @@ def BLDCMotorDetached(e):
     try:
         print("\nMotor Detached")
     except PhidgetException as e:
-        print("Phidget Exception %i: %s" % (e.code, e.details))
+        print("Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit...\n")
         readin = sys.stdin.read(1)
         exit(1)   
@@ -75,11 +111,11 @@ try:
     ch.setOnErrorHandler(ErrorEvent)
     ch.setOnVelocityUpdateHandler(VelocityUpdateHandler)
 
-    print("Waiting for motor to attach...")
+    print("Waiting for motor to attach")
     ch.openWaitForAttachment(5000)
 except PhidgetException as e:
-    print("Phidget Exception %i: %s" % (e.code, e.details))
-    print("Press Enter to Exit...\n")
+    print("Exception %i: %s" % (e.code, e.details))
+    print("Press Enter to Exit\n")
     readin = sys.stdin.read(1)
     exit(1)
     
@@ -88,7 +124,6 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-setVel=5 #Hz
 maxVel=0.3 #Duty Cycle
 try:
     while(1):    
@@ -105,16 +140,15 @@ except KeyboardInterrupt:
     # Close out
     ch.setTargetVelocity(0)
 
-    try:
-        f.close()
+    try:        
         ch.close()
+        f.close()
     except PhidgetException as e:
-        print("Phidget Exception %i: %s" % (e.code, e.details))
-        print("Press Enter to Exit...\n")
+        print("Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit\n")
         readin = sys.stdin.read(1)
         exit(1) 
-    print("Disconnected from motor")
-    exit(0)     
+    print("Disconnected from motor")   
 
                   
 
