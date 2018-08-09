@@ -1,5 +1,9 @@
 import sys
-import time 
+import time
+import os
+
+sys.path.append(os.getcwd()+"/lib")
+
 from Phidget22.Devices.BLDCMotor import *
 from Phidget22.PhidgetException import *
 from Phidget22.Phidget import *
@@ -12,7 +16,7 @@ vel=0;
 measVel=0;
 
 # Data file to be appended to
-f=open("ScalingTest.txt","a+")
+f=open("data/NoiseRun5Hz.txt","a+")
 
 # Motor connection
 try:
@@ -94,7 +98,7 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-setVel=10 #Hz
+setVel=5 #Hz
 maxVel=0.3 #Duty Cycle
 try:
     while(1):    
@@ -106,6 +110,7 @@ try:
             ch.setTargetVelocity(vel)
         else:
             ch.setTargetVelocity(maxVel)
+        time.wait(0.1)
             
 except KeyboardInterrupt:
     # Close out
