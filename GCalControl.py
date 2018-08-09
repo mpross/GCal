@@ -11,12 +11,12 @@ from Phidget22.Net import *
 
 # Variable initialization
 prevValue = 0.0
-prevTime=time.clock()
+prevTime=time.perf_counter()
 vel=0;
 measVel=0;
 
 # Data file to be appended to
-f=open("data/NoiseRun5Hz.txt","a+")
+f=open("data/NoiseRun2_5Hz.txt","a+")
 
 # Motor connection
 try:
@@ -30,17 +30,7 @@ except RuntimeError as e:
 def BLDCMotorAttached(e):
     try:
         attached = e
-        print("\nAttach Event Detected (Information Below)")
-        print("===========================================")
-        print("Library Version: %s" % attached.getLibraryVersion())
-        print("Serial Number: %d" % attached.getDeviceSerialNumber())
-        print("Channel: %d" % attached.getChannel())
-        print("Channel Class: %s" % attached.getChannelClass())
-        print("Channel Name: %s" % attached.getChannelName())
-        print("Device ID: %d" % attached.getDeviceID())
-        print("Device Version: %d" % attached.getDeviceVersion())
-        print("Device Name: %s" % attached.getDeviceName())
-        print("Device Class: %d" % attached.getDeviceClass())
+        print("\nMotor Attached")
         print("\n")
     except PhidgetException as e:
         print("Phidget Exception %i: %s" % (e.code, e.details))
@@ -51,7 +41,7 @@ def BLDCMotorAttached(e):
 def BLDCMotorDetached(e):
     detached = e
     try:
-        print("\nDetach event on Port %d Channel %d" % (detached.getHubPort(), detached.getChannel()))
+        print("\nMotor Detached")
     except PhidgetException as e:
         print("Phidget Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit...\n")
@@ -68,7 +58,7 @@ def VelocityUpdateHandler(e, velocity):
     global measVel
 
     currentValue=ch.getPosition()
-    currentTime=time.clock()
+    currentTime=time.perf_counter()
     
     # Outputs and saves set velocity and measured velocity
     print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
@@ -85,7 +75,7 @@ try:
     ch.setOnErrorHandler(ErrorEvent)
     ch.setOnVelocityUpdateHandler(VelocityUpdateHandler)
 
-    print("Waiting for the Phidget BLDCMotor Object to be attached...")
+    print("Waiting for motor to attach...")
     ch.openWaitForAttachment(5000)
 except PhidgetException as e:
     print("Phidget Exception %i: %s" % (e.code, e.details))
@@ -110,7 +100,7 @@ try:
             ch.setTargetVelocity(vel)
         else:
             ch.setTargetVelocity(maxVel)
-        time.wait(0.1)
+        time.sleep(0.1)
             
 except KeyboardInterrupt:
     # Close out
@@ -124,7 +114,7 @@ except KeyboardInterrupt:
         print("Press Enter to Exit...\n")
         readin = sys.stdin.read(1)
         exit(1) 
-    print("Closed BLDCMotor device")
+    print("Disconnected from motor")
     exit(0)     
 
                   
