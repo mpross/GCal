@@ -154,7 +154,7 @@ try:
         ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
         ch.setRescaleFactor(scale); # Sets scaling of Position readout
         ch.setAcceleration(maxAcc)
-        vel=abs(0.5*(setVel-avVel)+setVel)/4000*60 
+        vel=abs(0.5*(setVel-avVel)+setVel)/4000*60
 ##        vel=setVel/4000*60
         # Velocity limit
         try:
