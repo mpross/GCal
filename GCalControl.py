@@ -17,6 +17,9 @@ measVel=0;
 fileName="data.txt"
 setVel=3 #Hz
 maxVel=0.1 #Duty Cycle
+maxAcc=0.2 #Duty Cycle/s
+dataRate=100 #Must be int and is in milliseconds
+scale=360/12 #360 degrees/12 poles
 
 # Motor connection
 try:
@@ -30,9 +33,9 @@ try:
                 f=open("data/"+fileName,"a+")
             else:
                 option=input("File already exists\nOverwrite, Append, or New file: ")
-                if "a" in option:
+                if ("a" in option) or ("A" in option):
                     f=open("data/"+fileName,"a+")
-                elif "o" in option:
+                elif ("o" in option) or ("O" in option):
                     f=open("data/"+fileName,"w+")
                 else:
                     i=1
@@ -46,9 +49,9 @@ try:
                 f=open("data/"+fileName+".txt","a+")
             else:
                 option=input("File already exists\nOverwrite, Append, or New file: ")
-                if "a" in option:
+                if ("a" in option) or ("A" in option):
                     f=open("data/"+fileName+".txt","a+")
-                elif "o" in option:
+                elif ("o" in option) or ("O" in option):
                     f=open("data/"+fileName+".txt","w+")
                 else:
                     i=1
@@ -132,21 +135,26 @@ except PhidgetException as e:
     readin = sys.stdin.read(1)
     exit(1)
     
-ch.setDataInterval(100) # Sets controller output rate. Requires an int and is in millisec
-ch.setRescaleFactor(360/12); # Sets scaling of Position readout
-ch.setAcceleration(0.2)
+ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
+ch.setRescaleFactor(scale); # Sets scaling of Position readout
+ch.setAcceleration(maxAcc)
 
 # Feedback loop
 try:
-    while(1):    
-        
+    while(1):   
 ##        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
         vel=setVel/4000*60
         # Velocity limit
-        if(vel <=maxVel):            
-            ch.setTargetVelocity(vel)
-        else:            
-            ch.setTargetVelocity(maxVel)
+        try:
+            if(vel <=maxVel):            
+                ch.setTargetVelocity(vel)
+            else:            
+                ch.setTargetVelocity(maxVel)
+        except PhidgetException as e:
+            print("Exception %i: %s" % (e.code, e.details))
+            ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
+            ch.setRescaleFactor(scale); # Sets scaling of Position readout
+            ch.setAcceleration(maxAcc)
             
 except KeyboardInterrupt:
     # Close out
