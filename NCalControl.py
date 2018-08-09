@@ -26,7 +26,7 @@ sumVel=0.0
 
 # Motor connection
 try:
-    print("LIGO GCal Control")
+    print("LIGO NCal Control")
     fileSave=input("Save data? (y/n)")
     if ("y" in fileSave) or ("Y" in fileSave):
         fileName=input("Enter data file name: ")
