@@ -14,49 +14,58 @@ prevValue = 0.0
 prevTime=time.perf_counter()
 vel=0;
 measVel=0;
-fileName="NoiseRun_5Hz.txt"
+fileName="data.txt"
 setVel=3 #Hz
+maxVel=0.1 #Duty Cycle
 
 # Motor connection
 try:
     print("LIGO GCal Control")
-    fileName=input("Enter data file name: ")
-    # Data file to be appended to
-    if ".txt" in fileName:
-        if not os.path.exists("data/"+fileName):
-            f=open("data/"+fileName,"a+")
-        else:
-            option=input("File already exists\nOverwrite, Append, or NewFile: ")
-            if "a" in option:
+    fileSave=input("Save data? (y/n)")
+    if ("y" in fileSave) or ("Y" in fileSave):
+        fileName=input("Enter data file name: ")
+        # Data file to be appended to
+        if ".txt" in fileName:
+            if not os.path.exists("data/"+fileName):
                 f=open("data/"+fileName,"a+")
-            elif "o" in option:
-                f=open("data/"+fileName,"w+")
             else:
-                i=1
-                newFileName=fileName.replace(".txt","")+"("+str(i)+")"+".txt"
-                while(os.path.exists("data/"+newFileName)):
+                option=input("File already exists\nOverwrite, Append, or New file: ")
+                if "a" in option:
+                    f=open("data/"+fileName,"a+")
+                elif "o" in option:
+                    f=open("data/"+fileName,"w+")
+                else:
+                    i=1
                     newFileName=fileName.replace(".txt","")+"("+str(i)+")"+".txt"
-                    i+=1
-                f=open("data/"+newFileName,"a+")
-    else:
-        if not os.path.exists("data/"+fileName+".txt"):
-            f=open("data/"+fileName+".txt","a+")
+                    while(os.path.exists("data/"+newFileName)):
+                        newFileName=fileName.replace(".txt","")+"("+str(i)+")"+".txt"
+                        i+=1
+                    f=open("data/"+newFileName,"a+")
         else:
-            option=input("File already exists\nOverwrite, Append, or NewFile: ")
-            if "a" in option:
+            if not os.path.exists("data/"+fileName+".txt"):
                 f=open("data/"+fileName+".txt","a+")
-            elif "o" in option:
-                f=open("data/"+fileName+".txt","w+")
             else:
-                i=1
-                newFileName=fileName+"("+str(i)+")"+".txt"
-                while(os.path.exists("data/"+newFileName)):
+                option=input("File already exists\nOverwrite, Append, or New file: ")
+                if "a" in option:
+                    f=open("data/"+fileName+".txt","a+")
+                elif "o" in option:
+                    f=open("data/"+fileName+".txt","w+")
+                else:
+                    i=1
                     newFileName=fileName+"("+str(i)+")"+".txt"
-                    i+=1
-                f=open("data/"+newFileName,"a+")
+                    while(os.path.exists("data/"+newFileName)):
+                        newFileName=fileName+"("+str(i)+")"+".txt"
+                        i+=1
+                    f=open("data/"+newFileName,"a+")
+                    
     setVel=float(input("Set rotor frequency in Hz: "))
     
+    if setVel>(maxVel*4000/60):
+        print("Set velocity is greater than maximum.")
+        print("Velocity set to "+str(maxVel*4000/60))
+        
     ch = BLDCMotor()
+    
 except RuntimeError as e:
     print("Exception %s" % e.details)
     print("Press Enter to Exit...\n")
@@ -92,13 +101,17 @@ def VelocityUpdateHandler(e, velocity):
     global prevValue
     global prevTime
     global measVel
+    global fileSave
 
     currentValue=ch.getPosition()
     currentTime=time.perf_counter()
     
     # Outputs and saves set velocity and measured velocity
     print(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)))
-    f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+
+    if ("y" in fileSave) or ("Y" in fileSave):
+        f.write(str(ch.getVelocity()*4000/60) + "   " + str((currentValue-prevValue)/360/(currentTime-prevTime)) + "\r\n")
+
     measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
     
     prevValue=currentValue
@@ -124,25 +137,26 @@ ch.setRescaleFactor(360/12); # Sets scaling of Position readout
 ch.setAcceleration(0.2)
 
 # Feedback loop
-maxVel=0.3 #Duty Cycle
 try:
     while(1):    
         
 ##        vel=abs(0.5*(setVel-measVel)+setVel)/4000*60 
         vel=setVel/4000*60
         # Velocity limit
-        if(vel <=maxVel):
+        if(vel <=maxVel):            
             ch.setTargetVelocity(vel)
-        else:
+        else:            
             ch.setTargetVelocity(maxVel)
             
 except KeyboardInterrupt:
     # Close out
     ch.setTargetVelocity(0)
-
+    time.sleep(1)
     try:        
         ch.close()
-        f.close()
+        if ("y" in fileSave) or ("Y" in fileSave):
+            f.close()
+            
     except PhidgetException as e:
         print("Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit\n")
