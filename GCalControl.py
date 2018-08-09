@@ -16,7 +16,7 @@ vel=0;
 measVel=0;
 
 # Data file to be appended to
-f=open("data/NoiseRun2_5Hz.txt","a+")
+f=open("data/NoiseRun_5Hz.txt","a+")
 
 # Motor connection
 try:
@@ -100,7 +100,6 @@ try:
             ch.setTargetVelocity(vel)
         else:
             ch.setTargetVelocity(maxVel)
-        time.sleep(0.1)
             
 except KeyboardInterrupt:
     # Close out
