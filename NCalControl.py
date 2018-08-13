@@ -8,6 +8,7 @@ from Phidget22.Devices.BLDCMotor import *
 from Phidget22.PhidgetException import *
 from Phidget22.Phidget import *
 from Phidget22.Net import *
+from Phidget22.Devices.Encoder import *
 
 # Variable initialization
 prevValue = 0.0
@@ -18,7 +19,7 @@ fileName="data.txt"
 setVel=3 #Hz
 maxVel=0.2 #Duty Cycle
 maxAcc=0.2 #Duty Cycle/s
-dataRate=100 #Must be int and is in milliseconds
+dataRate=20 #Must be int and is in milliseconds
 scale=360/12 #360 degrees/12 poles
 avVel=0.0
 N=1
@@ -71,6 +72,7 @@ try:
         print("Velocity set to "+str(maxVel*4000/60))
         
     ch = BLDCMotor()
+    en= Encoder()
     
 except RuntimeError as e:
     print("Exception %s" % e.details)
@@ -97,13 +99,35 @@ def BLDCMotorDetached(e):
         print("Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit...\n")
         readin = sys.stdin.read(1)
+        exit(1)
+
+def EncoderAttached(e):
+    try:
+        attached = e
+        print("\nEncoder Attached")
+        print("\n")
+    except PhidgetException as e:
+        print("Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit...\n")
+        readin = sys.stdin.read(1)
         exit(1)   
+    
+def EncoderDetached(e):
+    detached = e
+    try:
+        print("\nEncoder Detached")
+    except PhidgetException as e:
+        print("Exception %i: %s" % (e.code, e.details))
+        print("Press Enter to Exit...\n")
+        readin = sys.stdin.read(1)
+        exit(1)
+        
 
 def ErrorEvent(e, eCode, description):
     print("Error %i : %s" % (eCode, description))
 
 # This event is called at a regular cadence set by DataInterval timed by the controllers clock.    
-def VelocityUpdateHandler(e, velocity):
+def MotorVelocityUpdateHandler(e, velocity):
     global prevValue, prevTime, measVel, fileSave, avVel, N, sumVel
 
     currentValue=ch.getPosition()
@@ -129,12 +153,17 @@ def VelocityUpdateHandler(e, velocity):
     prevValue=currentValue
     prevTime=currentTime
 
+def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
+    global setVel
+    print(str(positionChange) + "   " + str(timeChange))
+    print(str(setVel) + "   " + str(positionChange/360))
+
 # Initial setup
 try:
     ch.setOnAttachHandler(BLDCMotorAttached)
     ch.setOnDetachHandler(BLDCMotorDetached)
     ch.setOnErrorHandler(ErrorEvent)
-    ch.setOnVelocityUpdateHandler(VelocityUpdateHandler)
+##    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
 
     print("Waiting for motor to attach")
     ch.openWaitForAttachment(5000)
@@ -144,16 +173,31 @@ except PhidgetException as e:
     readin = sys.stdin.read(1)
     exit(1)
     
-ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
+try:
+    en.setOnAttachHandler(EncoderAttached)
+    en.setOnDetachHandler(EncoderDetached)
+    en.setOnErrorHandler(ErrorEvent)
+    en.setOnPositionChangeHandler(PositionChangeHandler)
+    
+    print("Waiting for encoder to attach")
+    en.openWaitForAttachment(5000)
+except PhidgetException as e:
+    print("Exception %i: %s" % (e.code, e.details))
+    print("Press Enter to Exit\n")
+    readin = sys.stdin.read(1)
+    exit(1)
+
+if(not en.getEnabled()):
+    en.setEnabled(1)
+    
+    
+##en.setDataInterval(dataRate)  # Sets controller output rate. Requires an int and is in millisec 
 ch.setRescaleFactor(scale); # Sets scaling of Position readout
 ch.setAcceleration(maxAcc)
 
 # Feedback loop
 try:
     while(1):
-        ch.setDataInterval(dataRate) # Sets controller output rate. Requires an int and is in millisec
-        ch.setRescaleFactor(scale); # Sets scaling of Position readout
-        ch.setAcceleration(maxAcc)
 ##        vel=abs(0.5*(setVel-avVel)+setVel)/4000*60
         vel=setVel/4000*60
         # Velocity limit
@@ -170,6 +214,7 @@ try:
 except KeyboardInterrupt:
     # Close out
     ch.setTargetVelocity(0)
+    en.close()
     time.sleep(1)
     try:        
         ch.close()

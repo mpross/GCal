@@ -3,13 +3,13 @@ import ctypes
 class EncoderIOMode:
 	# No additional pull-up or pull-down resistors will be applied to the input lines.
 	ENCODER_IO_MODE_PUSH_PULL = 1
-	# 2.2kΩ pull-down resistors will be applied to the input lines.
+	# 2.2k pull-down resistors will be applied to the input lines.
 	ENCODER_IO_MODE_LINE_DRIVER_2K2 = 2
-	# 10kΩ pull-down resistors will be applied to the input lines.
+	# 10k pull-down resistors will be applied to the input lines.
 	ENCODER_IO_MODE_LINE_DRIVER_10K = 3
-	# 2.2kΩ pull-up resistors will be applied to the input lines.
+	# 2.2k pull-up resistors will be applied to the input lines.
 	ENCODER_IO_MODE_OPEN_COLLECTOR_2K2 = 4
-	# 10kΩ pull-up resistors will be applied to the input lines.
+	# 10k pull-up resistors will be applied to the input lines.
 	ENCODER_IO_MODE_OPEN_COLLECTOR_10K = 5
 
 	@classmethod
