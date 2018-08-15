@@ -14,24 +14,28 @@ from Phidget22.Devices.Encoder import *
 # Variable initialization
 prevValue = 0.0
 prevTime=time.perf_counter()
-vel=0;
-measVel=0;
+vel=0
+measVel=0
 fileName="data.txt"
 setVel=3 #Hz
 maxVel=0.2 #Duty Cycle
 maxAcc=0.2 #Duty Cycle/s
-dataRate=20 #Must be int and is in milliseconds
 scale=360/12 #360 degrees/12 poles
+encoderDataRate=20 #Must be int and is in milliseconds
+motorDataRate=100 #Must be int and is in milliseconds
 avVel=0.0
 N=1
 sumVel=0.0
+stopped=False
 
 class EncoderThread(threading.Thread):
+    global encoderDataRate, avVel, setVel
         
     def run(self):
-        en= Encoder()
         def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
-            print("Position Changed: %7d  %7.3lf  %d\n" % (positionChange, timeChange, indexTriggered))
+            print(str(positionChange/timeChange/360/4*1000))
+            avVel=positionChange
+            
         def EncoderAttached(e):
             try:
                 attached = e
@@ -57,25 +61,30 @@ class EncoderThread(threading.Thread):
         def ErrorEvent(e, eCode, description):
             print("Error %i : %s" % (eCode, description))
             
-        try:
-            en.setOnAttachHandler(EncoderAttached)
-            en.setOnDetachHandler(EncoderDetached)
-            en.setOnErrorHandler(ErrorEvent)
-            en.setOnPositionChangeHandler(PositionChangeHandler)
-            
-            print("Waiting for encoder to attach")
-            en.openWaitForAttachment(5000)
-        except PhidgetException as e:
-            print("Exception %i: %s" % (e.code, e.details))
-            print("Press Enter to Exit\n")
-            readin = sys.stdin.read(1)
-            exit(1)
-            
-            en.setDataInterval(dataRate)
-            if(not en.getEnabled()):
-                en.setEnabled(1)
+        en= Encoder()   
+        while not stopped:
+            if not en.getAttached():
+                try:
+                    en.setOnAttachHandler(EncoderAttached)
+                    en.setOnDetachHandler(EncoderDetached)
+                    en.setOnErrorHandler(ErrorEvent)
+                    en.setOnPositionChangeHandler(PositionChangeHandler)
+                    
+                    print("\nWaiting for encoder to attach")
+                    en.openWaitForAttachment(5000)
+                    
+                    if(not en.getEnabled()):
+                        en.setEnabled(1)
+                    
+                except PhidgetException as e:
+                    print("Exception %i: %s" % (e.code, e.details))
+                    print("Press Enter to Exit\n")
+                    readin = sys.stdin.read(1)
+                    exit(1)
+                    
+                en.setDataInterval(encoderDataRate)
 
-        
+        en.close()
         
 
 # Motor connection
@@ -171,14 +180,14 @@ def MotorVelocityUpdateHandler(e, velocity):
 
     measVel=(currentValue-prevValue)/360/(currentTime-prevTime)
     
-    if N<10:
-        sumVel+=measVel
-        N+=1
-    else:
-        sumVel+=measVel
-        avVel=sumVel/10.0
-        N=1
-        sumVel=0.0
+##    if N<10:
+##        sumVel+=measVel
+##        N+=1
+##    else:
+##        sumVel+=measVel
+##        avVel=sumVel/10.0
+##        N=1
+##        sumVel=0.0
         
     prevValue=currentValue
     prevTime=currentTime
@@ -191,17 +200,18 @@ try:
     ch.setOnAttachHandler(BLDCMotorAttached)
     ch.setOnDetachHandler(BLDCMotorDetached)
     ch.setOnErrorHandler(ErrorEvent)
-    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
+##    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
 
-    print("Waiting for motor to attach")
+    print("\nWaiting for motor to attach")
     ch.openWaitForAttachment(5000)
 except PhidgetException as e:
     print("Exception %i: %s" % (e.code, e.details))
     print("Press Enter to Exit\n")
     readin = sys.stdin.read(1)
     exit(1)
-    
-ch.setRescaleFactor(scale); # Sets scaling of Position readout
+
+ch.setDataInterval(motorDataRate)    
+ch.setRescaleFactor(scale) # Sets scaling of Position readout
 ch.setAcceleration(maxAcc)
 
 # Feedback loop
@@ -222,8 +232,8 @@ try:
             
 except KeyboardInterrupt:
     # Close out
+    stopped=True
     ch.setTargetVelocity(0)
-##    en.close()
     time.sleep(1)
     try:        
         ch.close()
