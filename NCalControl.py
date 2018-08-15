@@ -1,6 +1,7 @@
 import sys
 import time
 import os
+import threading
 
 sys.path.append(os.getcwd()+"/lib")
 
@@ -24,6 +25,58 @@ scale=360/12 #360 degrees/12 poles
 avVel=0.0
 N=1
 sumVel=0.0
+
+class EncoderThread(threading.Thread):
+        
+    def run(self):
+        en= Encoder()
+        def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
+            print("Position Changed: %7d  %7.3lf  %d\n" % (positionChange, timeChange, indexTriggered))
+        def EncoderAttached(e):
+            try:
+                attached = e
+                print("\nEncoder Attached")
+                print("\n")
+            except PhidgetException as e:
+                print("Exception %i: %s" % (e.code, e.details))
+                print("Press Enter to Exit...\n")
+                readin = sys.stdin.read(1)
+                exit(1)   
+    
+        def EncoderDetached(e):
+            detached = e
+            try:
+                print("\nEncoder Detached")
+            except PhidgetException as e:
+                print("Exception %i: %s" % (e.code, e.details))
+                print("Press Enter to Exit...\n")
+                readin = sys.stdin.read(1)
+                exit(1)
+                
+
+        def ErrorEvent(e, eCode, description):
+            print("Error %i : %s" % (eCode, description))
+            
+        try:
+            en.setOnAttachHandler(EncoderAttached)
+            en.setOnDetachHandler(EncoderDetached)
+            en.setOnErrorHandler(ErrorEvent)
+            en.setOnPositionChangeHandler(PositionChangeHandler)
+            
+            print("Waiting for encoder to attach")
+            en.openWaitForAttachment(5000)
+        except PhidgetException as e:
+            print("Exception %i: %s" % (e.code, e.details))
+            print("Press Enter to Exit\n")
+            readin = sys.stdin.read(1)
+            exit(1)
+            
+            en.setDataInterval(dataRate)
+            if(not en.getEnabled()):
+                en.setEnabled(1)
+
+        
+        
 
 # Motor connection
 try:
@@ -72,7 +125,6 @@ try:
         print("Velocity set to "+str(maxVel*4000/60))
         
     ch = BLDCMotor()
-    en= Encoder()
     
 except RuntimeError as e:
     print("Exception %s" % e.details)
@@ -99,29 +151,7 @@ def BLDCMotorDetached(e):
         print("Exception %i: %s" % (e.code, e.details))
         print("Press Enter to Exit...\n")
         readin = sys.stdin.read(1)
-        exit(1)
-
-def EncoderAttached(e):
-    try:
-        attached = e
-        print("\nEncoder Attached")
-        print("\n")
-    except PhidgetException as e:
-        print("Exception %i: %s" % (e.code, e.details))
-        print("Press Enter to Exit...\n")
-        readin = sys.stdin.read(1)
-        exit(1)   
-    
-def EncoderDetached(e):
-    detached = e
-    try:
-        print("\nEncoder Detached")
-    except PhidgetException as e:
-        print("Exception %i: %s" % (e.code, e.details))
-        print("Press Enter to Exit...\n")
-        readin = sys.stdin.read(1)
-        exit(1)
-        
+        exit(1)        
 
 def ErrorEvent(e, eCode, description):
     print("Error %i : %s" % (eCode, description))
@@ -153,17 +183,15 @@ def MotorVelocityUpdateHandler(e, velocity):
     prevValue=currentValue
     prevTime=currentTime
 
-def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
-    global setVel
-    print(str(positionChange) + "   " + str(timeChange))
-    print(str(setVel) + "   " + str(positionChange/360))
+enThread=EncoderThread(name="Encoder Thread")
+enThread.start()
 
 # Initial setup
 try:
     ch.setOnAttachHandler(BLDCMotorAttached)
     ch.setOnDetachHandler(BLDCMotorDetached)
     ch.setOnErrorHandler(ErrorEvent)
-##    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
+    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
 
     print("Waiting for motor to attach")
     ch.openWaitForAttachment(5000)
@@ -173,25 +201,6 @@ except PhidgetException as e:
     readin = sys.stdin.read(1)
     exit(1)
     
-try:
-    en.setOnAttachHandler(EncoderAttached)
-    en.setOnDetachHandler(EncoderDetached)
-    en.setOnErrorHandler(ErrorEvent)
-    en.setOnPositionChangeHandler(PositionChangeHandler)
-    
-    print("Waiting for encoder to attach")
-    en.openWaitForAttachment(5000)
-except PhidgetException as e:
-    print("Exception %i: %s" % (e.code, e.details))
-    print("Press Enter to Exit\n")
-    readin = sys.stdin.read(1)
-    exit(1)
-
-if(not en.getEnabled()):
-    en.setEnabled(1)
-    
-    
-##en.setDataInterval(dataRate)  # Sets controller output rate. Requires an int and is in millisec 
 ch.setRescaleFactor(scale); # Sets scaling of Position readout
 ch.setAcceleration(maxAcc)
 
@@ -214,7 +223,7 @@ try:
 except KeyboardInterrupt:
     # Close out
     ch.setTargetVelocity(0)
-    en.close()
+##    en.close()
     time.sleep(1)
     try:        
         ch.close()
