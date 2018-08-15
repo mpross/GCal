@@ -29,11 +29,14 @@ sumVel=0.0
 stopped=False
 
 class EncoderThread(threading.Thread):
-    global encoderDataRate, avVel, setVel
+    global encoderDataRate, avVel, setVel,f,fileSave
         
     def run(self):
         def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
             print(str(positionChange/timeChange/360/4*1000))
+            if ("y" in fileSave) or ("Y" in fileSave):
+                f.write(str(positionChange/timeChange/360/4*1000)+"\r\n")
+
             avVel=positionChange
             
         def EncoderAttached(e):
@@ -200,7 +203,7 @@ try:
     ch.setOnAttachHandler(BLDCMotorAttached)
     ch.setOnDetachHandler(BLDCMotorDetached)
     ch.setOnErrorHandler(ErrorEvent)
-##    ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
+    #ch.setOnVelocityUpdateHandler(MotorVelocityUpdateHandler)
 
     print("\nWaiting for motor to attach")
     ch.openWaitForAttachment(5000)
