@@ -30,14 +30,16 @@ stopped=False
 
 class EncoderThread(threading.Thread):
     global encoderDataRate, avVel, setVel,f,fileSave
-        
     def run(self):
         def PositionChangeHandler(self, positionChange, timeChange, indexTriggered):
-            print(str(positionChange/timeChange/360/4*1000))
+            global prevTime
+            currentTime=time.perf_counter()
+##            print(str((currentTime-prevTime)*1000)+" "+str(positionChange/timeChange/360/4*1000))##
             if ("y" in fileSave) or ("Y" in fileSave):
-                f.write(str(positionChange/timeChange/360/4*1000)+"\r\n")
-
+##                f.write(str(positionChange/timeChange/360/4*1000)+"\r\n")
+                f.write(str((currentTime-prevTime)*1000)+"\r\n")
             avVel=positionChange
+            prevTime=currentTime
             
         def EncoderAttached(e):
             try:
@@ -63,7 +65,7 @@ class EncoderThread(threading.Thread):
 
         def ErrorEvent(e, eCode, description):
             print("Error %i : %s" % (eCode, description))
-            
+    
         en= Encoder()   
         while not stopped:
             if not en.getAttached():
